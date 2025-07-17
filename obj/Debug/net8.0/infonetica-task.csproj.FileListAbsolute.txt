@@ -23,3 +23,6 @@ E:\CODE\Dev\infonetica-task\obj\Debug\net8.0\refint\infonetica-task.dll
 E:\CODE\Dev\infonetica-task\obj\Debug\net8.0\infonetica-task.pdb
 E:\CODE\Dev\infonetica-task\obj\Debug\net8.0\infonetica-task.genruntimeconfig.cache
 E:\CODE\Dev\infonetica-task\obj\Debug\net8.0\ref\infonetica-task.dll
+E:\CODE\Dev\infonetica-task\bin\Debug\net8.0\data\instances.json
+E:\CODE\Dev\infonetica-task\bin\Debug\net8.0\data\workflows.json
+E:\CODE\Dev\infonetica-task\obj\Debug\net8.0\infonetica-task.sourcelink.json

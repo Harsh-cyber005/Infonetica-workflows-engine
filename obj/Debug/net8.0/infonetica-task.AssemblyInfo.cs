@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("infonetica-task")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+515d85493d003d2a315d243a66bf1d3785ec86bc")]
 [assembly: System.Reflection.AssemblyProductAttribute("infonetica-task")]
 [assembly: System.Reflection.AssemblyTitleAttribute("infonetica-task")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
