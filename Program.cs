@@ -1,5 +1,6 @@
 using infonetica_task.Models;
 using infonetica_task.Utils;
+using infonetica_task.DTO;
 
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
@@ -10,10 +11,11 @@ const string instancesPath = "data/instances.json";
 
 
 List<WorkflowDefinition> workflows = FileStorage.LoadList<WorkflowDefinition>(workflowsPath);
-List<WorkflowInstance> workflowInstances = FileStorage.LoadList<WorkflowInstance>(instancesPath);
+List<WorkflowInstance> instances = FileStorage.LoadList<WorkflowInstance>(instancesPath);
 
 app.MapGet("/", () => "Hello World!");
 
+// workflow routes
 app.MapPost("/workflows", (WorkflowDefinition newWorkflow) => {
     foreach (var existingWorkflow in workflows) {
         if (existingWorkflow.Id == newWorkflow.Id) {
@@ -94,6 +96,136 @@ app.MapGet("/workflows/{id}", (string id) => {
         }
     }
     return Results.NotFound($"Workflow with id '{id}' not found.");
+});
+
+//instance routes
+app.MapPost("/instances", (StartInstanceRequest request) => {
+    string workflowId = request.WorkflowId;
+    if (string.IsNullOrEmpty(workflowId)) {
+        return Results.BadRequest("WorkflowId cannot be empty.");
+    }
+    WorkflowDefinition? workflow = null;
+    foreach (var w in workflows) {
+        if (w.Id == workflowId) {
+            workflow = w;
+            break;
+        }
+    }
+
+    if (workflow == null) {
+        return Results.NotFound($"Workflow with id '{workflowId}' not found.");
+    }
+
+    State? initialState = null;
+    // JUST some sanity checks even though we validate this in the workflow creation
+    if (workflow.States.Count == 0) {
+        return Results.BadRequest("Workflow has no states defined.");
+    }
+    foreach (var state in workflow.States) {
+        if (state.IsInitial) {
+            initialState = state;
+            break;
+        }
+    }
+
+    if (initialState == null) {
+        return Results.BadRequest("Workflow does not have an initial state.");
+    }
+
+    var instance = new WorkflowInstance {
+        WorkflowId = workflow.Id,
+        CurrentState = initialState.Id,
+        History = []
+    };
+
+    instances.Add(instance);
+    FileStorage.SaveList(instancesPath, instances);
+
+    return Results.Ok(new { instanceId = instance.Id });
+});
+
+app.MapPost("/instances/{instanceId}/trigger", (string instanceId, TriggerActionRequest request) => {
+    string actionId = request.ActionId;
+    WorkflowInstance? instance = null;
+    foreach (var ins in instances) {
+        if (ins.Id == instanceId) {
+            instance = ins;
+            break;
+        }
+    }
+    if (instance == null) {
+        return Results.NotFound($"Instance with id '{instanceId}' not found.");
+    }
+
+    WorkflowDefinition? workflow = null;
+    foreach (var w in workflows) {
+        if (w.Id == instance.WorkflowId) {
+            workflow = w;
+            break;
+        }
+    }
+    if (workflow == null) {
+        return Results.BadRequest($"Workflow definition '{instance.WorkflowId}' not found.");
+    }
+
+    ActionTransition? action = null;
+    foreach (var act in workflow.Actions) {
+        if (act.Id == actionId) {
+            action = act;
+            break;
+        }
+    }
+    if (action == null) {
+        return Results.BadRequest($"Action '{actionId}' not found in workflow.");
+    }
+
+    if (!action.Enabled) {
+        return Results.BadRequest($"Action '{actionId}' is disabled.");
+    }
+
+    State? currentState = null;
+    foreach (var state in workflow.States) {
+        if (state.Id == instance.CurrentState) {
+            currentState = state;
+            break;
+        }
+    }
+    if (currentState == null) {
+        return Results.BadRequest($"Current state '{instance.CurrentState}' not found in workflow states.");
+    }
+    if (!currentState.Enabled) {
+        return Results.BadRequest($"Current state '{instance.CurrentState}' is disabled.");
+    }
+
+    bool canTrigger = false;
+    foreach (var fromState in action.FromStates) {
+        if (fromState == instance.CurrentState) {
+            canTrigger = true;
+            break;
+        }
+    }
+    if (!canTrigger) {
+        return Results.BadRequest($"Action '{actionId}' cannot be executed from current state '{instance.CurrentState}'.");
+    }
+
+    // just some defense if someone mentioned a final state in the action fromStates. logically even if final state is mentioned, it should not be possible to trigger an action from it
+    if (currentState.IsFinal) {
+        return Results.BadRequest($"Cannot execute actions from final state '{currentState.Id}'.");
+    }
+
+    string oldState = instance.CurrentState;
+    instance.CurrentState = action.ToState;
+
+    instance.History.Add(new TransitionHistory {
+        Action = action.Id,
+        From = oldState,
+        To = action.ToState,
+        Timestamp = DateTime.UtcNow
+    });
+
+    FileStorage.SaveList(instancesPath, instances);
+
+    return Results.Ok($"Instance '{instanceId}' moved from '{oldState}' to '{action.ToState}' via action '{action.Id}'.");
 });
 
 app.Run();
