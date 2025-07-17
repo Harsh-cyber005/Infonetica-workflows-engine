@@ -27,6 +27,16 @@ public static class FileStorage {
     // Save a list of items to a JSON file
     public static async Task SaveList<T>(string filePath, List<T> data) {
         try {
+            if (data == null) {
+                Console.WriteLine("Data to save is null, skipping write operation.");
+                return;
+            }
+            // Ensure the directory exists before writing the file
+            var directory = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) {
+                // Create the directory if it doesn't exist
+                Directory.CreateDirectory(directory);
+            }
             var json = JsonSerializer.Serialize(data, _jsonOptions);
             await File.WriteAllTextAsync(filePath, json);
         }
