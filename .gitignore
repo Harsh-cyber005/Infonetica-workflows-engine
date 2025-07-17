@@ -1,5 +1,5 @@
-workflows.json
-instances.json
+/data/workflows.json
+/data/instances.json
 
 bin/
 obj/
