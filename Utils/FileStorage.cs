@@ -6,16 +6,32 @@ public static class FileStorage {
     private static readonly JsonSerializerOptions _jsonOptions = new() {
         WriteIndented = true
     };
-    public static List<T> LoadList<T>(string filePath) {
-        if (!File.Exists(filePath))
-            return [];
 
-        var json = File.ReadAllText(filePath);
-        return JsonSerializer.Deserialize<List<T>>(json) ?? [];
+    // Used generics to allow for any type of object to be saved or loaded.
+
+    // Load a list of items from a JSON file. Returns an empty list if file doesn't exist or fails to load.
+    public static async Task<List<T>> LoadList<T>(string filePath) {
+        try {
+            if (!File.Exists(filePath))
+                return [];
+
+            var json = await File.ReadAllTextAsync(filePath);
+            return JsonSerializer.Deserialize<List<T>>(json) ?? [];
+        }
+        catch (Exception ex) {
+            Console.WriteLine($"Error reading file '{filePath}': {ex.Message}");
+            return [];
+        }
     }
 
-    public static void SaveList<T>(string filePath, List<T> data) {
-        var json = JsonSerializer.Serialize(data, _jsonOptions);
-        File.WriteAllText(filePath, json);
+    // Save a list of items to a JSON file
+    public static async Task SaveList<T>(string filePath, List<T> data) {
+        try {
+            var json = JsonSerializer.Serialize(data, _jsonOptions);
+            await File.WriteAllTextAsync(filePath, json);
+        }
+        catch (Exception ex) {
+            Console.WriteLine($"Error writing file '{filePath}': {ex.Message}");
+        }
     }
 }
