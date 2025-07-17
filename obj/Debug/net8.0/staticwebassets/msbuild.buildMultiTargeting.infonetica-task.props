@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\infonetica-task.props" />
+</Project>
